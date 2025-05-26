@@ -8,7 +8,10 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "firebase:deploy": "./deploy-rules.sh",
+    "firebase:test": "node test-rules.js",
+    "firebase:emulator": "firebase emulators:start --only firestore,storage"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",

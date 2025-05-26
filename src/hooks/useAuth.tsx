@@ -19,6 +19,7 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseAuth, getFirebaseFirestore } from '../config/firebase';
 import { firestoreService } from '../services/firestoreService';
+import { analyticsService } from '../services/analyticsService';
 import { User } from '../types';
 
 export const useAuth = () => {
@@ -54,6 +55,14 @@ export const useAuth = () => {
               if (userData) {
                 setUser(userData);
                 setIsLoggedIn(true);
+                
+                // Set analytics user ID and properties
+                analyticsService.setAnalyticsUserId(userData.username || userData.id);
+                analyticsService.setUserProperties({
+                  user_type: 'returning',
+                  has_username: !!userData.username,
+                  is_public_profile: userData.isPublicProfile
+                });
               } else {
                 // User exists in Firebase Auth but not in our Firestore with username
                 // This might be a legacy user or new user without username
@@ -69,6 +78,13 @@ export const useAuth = () => {
                 };
                 setUser(userObj);
                 setIsLoggedIn(true);
+                
+                // Set analytics properties for new user
+                analyticsService.setUserProperties({
+                  user_type: 'new',
+                  has_username: false,
+                  is_public_profile: false
+                });
               }
               
               console.log("All user data loaded successfully");
@@ -141,6 +157,9 @@ export const useAuth = () => {
       const auth = getFirebaseAuth();
       await signInWithEmailAndPassword(auth, email, password);
       console.log('Logging in with:', email);
+      
+      // Track login event
+      analyticsService.trackLogin('email');
     } catch (error) {
       console.error('Login failed:', error);
       throw error;
@@ -152,6 +171,10 @@ export const useAuth = () => {
       const auth = getFirebaseAuth();
       await createUserWithEmailAndPassword(auth, email, password);
       console.log('User registered successfully. Username will be set later.');
+      
+      // Track registration event
+      analyticsService.trackSignUp('email');
+      
       // User document will be created when username is chosen
     } catch (error) {
       console.error('Registration failed:', error);
@@ -204,6 +227,13 @@ export const useAuth = () => {
 
         await firestoreService.createUser(username, userData);
         setUser(prev => prev ? { ...prev, username, id: username } : null);
+        
+        // Track username set and update analytics
+        analyticsService.trackUsernameSet();
+        analyticsService.setAnalyticsUserId(username);
+        analyticsService.setUserProperties({
+          has_username: true
+        });
       }
     } catch (error) {
       console.error('Error updating username:', error);
@@ -217,6 +247,12 @@ export const useAuth = () => {
     try {
       await firestoreService.updateUser(user.username, { isPublicProfile: isPublic });
       setUser(prev => prev ? { ...prev, isPublicProfile: isPublic } : null);
+      
+      // Track profile visibility change
+      analyticsService.trackProfileVisibilityChange(isPublic);
+      analyticsService.setUserProperties({
+        is_public_profile: isPublic
+      });
     } catch (error) {
       console.error('Error updating profile visibility:', error);
       throw error;

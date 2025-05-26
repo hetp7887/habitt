@@ -7,6 +7,7 @@ import { useProfiles } from '../hooks/useProfiles';
 import { useBadges } from '../hooks/useBadges';
 import { useToast } from '@/hooks/use-toast';
 import NotificationService from '../services/notificationService';
+import { analyticsService } from '../services/analyticsService';
 
 interface AppContextType {
   tasks: Task[];
@@ -68,6 +69,9 @@ export const AppProvider = ({ children }: AppProviderProps) => {
   const addTask = async (task: Omit<Task, 'id'>) => {
     await baseAddTask(task);
     
+    // Track task creation
+    analyticsService.trackTaskCreated(task.category);
+    
     // Schedule notification if reminder time is set
     if (task.reminderTime) {
       // We need to get the task ID after it's created, so we'll schedule it after the tasks update
@@ -96,6 +100,11 @@ export const AppProvider = ({ children }: AppProviderProps) => {
         if (newStreak) {
           setCurrentStreak(newStreak);
           updateBadges(newStreak);
+          
+          // Track streak milestones
+          if (newStreak > oldStreak && (newStreak % 5 === 0 || newStreak % 10 === 0)) {
+            analyticsService.trackStreakMilestone(newStreak);
+          }
         }
         
         // Evaluate for special badges using AI
@@ -107,11 +116,17 @@ export const AppProvider = ({ children }: AppProviderProps) => {
         });
         
         if (specialBadge) {
+          // Track badge earned
+          analyticsService.trackBadgeEarned(specialBadge.name, specialBadge.type || 'special');
+          
           toast({
             title: "🏆 New Badge Earned!",
             description: `You've earned the "${specialBadge.name}" badge! ${specialBadge.description}`,
           });
         }
+        
+        // Track task completion
+        analyticsService.trackTaskCompleted(task.category, task.points);
       }
     });
 
@@ -137,6 +152,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     
     if (complete) {
       localStorage.setItem('onboardingComplete', 'true');
+      analyticsService.trackOnboardingCompleted();
     }
   };
 
@@ -155,10 +171,12 @@ export const AppProvider = ({ children }: AppProviderProps) => {
 
   // Add effect to check if username is set
   useEffect(() => {
-    if (user && isLoggedIn && !user.username) {
+    if (user && isLoggedIn && !user.username && !usernamePromptComplete) {
       setShowUsernamePrompt(true);
+    } else if (user && user.username && usernamePromptComplete) {
+      setShowUsernamePrompt(false);
     }
-  }, [user, isLoggedIn]);
+  }, [user, isLoggedIn, usernamePromptComplete]);
 
   return (
     <AppContext.Provider value={{

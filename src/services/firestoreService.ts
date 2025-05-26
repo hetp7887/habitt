@@ -24,6 +24,7 @@ export class FirestoreService {
       return !userDoc.exists();
     } catch (error) {
       console.error('Error checking username availability:', error);
+      // If we get a permission error, assume username is taken for security
       return false;
     }
   }

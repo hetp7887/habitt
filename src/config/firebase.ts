@@ -2,6 +2,7 @@
 import { FirebaseApp, initializeApp } from 'firebase/app';
 import { Auth, getAuth } from 'firebase/auth';
 import { Firestore, getFirestore } from 'firebase/firestore';
+import { Analytics, getAnalytics } from 'firebase/analytics';
 
 // Firebase configuration - using environment variables for security
 const firebaseConfig = {
@@ -10,13 +11,15 @@ const firebaseConfig = {
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Lazy initialize Firebase
 let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
+let analytics: Analytics;
 
 // Initialize Firebase only when needed
 const getFirebaseApp = (): FirebaseApp => {
@@ -61,4 +64,18 @@ const getFirebaseFirestore = (): Firestore => {
   return db;
 };
 
-export { getFirebaseApp, getFirebaseAuth, getFirebaseFirestore };
+const getFirebaseAnalytics = (): Analytics => {
+  if (!analytics) {
+    console.log("Initializing Firebase analytics");
+    try {
+      analytics = getAnalytics(getFirebaseApp());
+      console.log("Firebase analytics initialized successfully");
+    } catch (error) {
+      console.error("Error initializing Firebase analytics:", error);
+      throw error;
+    }
+  }
+  return analytics;
+};
+
+export { getFirebaseApp, getFirebaseAuth, getFirebaseFirestore, getFirebaseAnalytics };

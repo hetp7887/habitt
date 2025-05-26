@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Dashboard from './Dashboard';
 import TaskList from './TaskList';
 import NewTaskPage from './NewTaskPage';
@@ -8,12 +8,33 @@ import { Button } from '@/components/ui/button';
 import { LogOut, User } from 'lucide-react';
 import { useAppContext } from '@/context/AppContext';
 import { useToast } from '@/hooks/use-toast';
+import { analyticsService } from '@/services/analyticsService';
 
 const MainApp = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [showNewTask, setShowNewTask] = useState(false);
   const { user, logout } = useAppContext();
   const { toast } = useToast();
+
+  // Track page views when activeTab changes
+  useEffect(() => {
+    const pageNames: { [key: string]: string } = {
+      'home': 'Task List',
+      'dashboard': 'Dashboard',
+      'profile': 'Profile',
+      'explore': 'Explore'
+    };
+    
+    const pageName = pageNames[activeTab] || 'Unknown';
+    analyticsService.trackPageView(pageName);
+  }, [activeTab]);
+
+  // Track new task page view
+  useEffect(() => {
+    if (showNewTask) {
+      analyticsService.trackPageView('New Task');
+    }
+  }, [showNewTask]);
 
   const handleLogout = async () => {
     try {
