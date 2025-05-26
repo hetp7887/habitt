@@ -5,6 +5,31 @@ export const registerSW = () => {
       navigator.serviceWorker.register('/sw.js')
         .then((registration) => {
           console.log('SW registered: ', registration);
+          
+          // Listen for service worker messages
+          navigator.serviceWorker.addEventListener('message', (event) => {
+            console.log('Message from SW:', event.data);
+            
+            if (event.data.type === 'SYNC_TASKS') {
+              // Handle task sync completion
+              console.log('Tasks synced:', event.data.message);
+            }
+          });
+          
+          // Check for updates
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  // New content is available, prompt user to refresh
+                  if (confirm('New version available! Refresh to update?')) {
+                    window.location.reload();
+                  }
+                }
+              });
+            }
+          });
         })
         .catch((registrationError) => {
           console.log('SW registration failed: ', registrationError);

@@ -31,7 +31,6 @@ interface AppContextType {
   fetchPublicProfiles: () => Promise<UserProfile[]>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
 }
 
@@ -56,7 +55,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
   const { toast } = useToast();
 
   // Custom hooks
-  const { user, isLoggedIn, login, register, loginWithGoogle, logout, updateUsername, updateProfileVisibility } = useAuth();
+  const { user, isLoggedIn, login, register, logout, updateUsername, updateProfileVisibility } = useAuth();
   const { tasks, completedTasksPercentage, addTask: baseAddTask, completeTask: baseCompleteTask, uncompleteTask, deleteTask, reorderTasks } = useTasks(user, isLoggedIn);
   const { currentStreak, checkAndUpdateStreak, setCurrentStreak } = useStreak(user, isLoggedIn);
   const { badges, updateBadges, evaluateAndAwardSpecialBadge } = useBadges();
@@ -185,8 +184,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       fetchPublicProfiles,
       login,
       register,
-      logout,
-      loginWithGoogle
+      logout
     }}>
       {children}
     </AppContext.Provider>

@@ -4,8 +4,6 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut, 
-  GoogleAuthProvider,
-  signInWithPopup,
   onAuthStateChanged,
   browserLocalPersistence
 } from 'firebase/auth';
@@ -178,40 +176,7 @@ export const useAuth = () => {
     }
   };
 
-  const loginWithGoogle = async () => {
-    try {
-      const auth = getFirebaseAuth();
-      const provider = new GoogleAuthProvider();
-      const userCredential = await signInWithPopup(auth, provider);
-      console.log('Logging in with Google');
-      
-      const uid = userCredential.user.uid;
-      const email = userCredential.user.email || '';
-      
-      const db = getFirebaseFirestore();
-      const userDocRef = doc(db, 'users', uid);
-      const userDoc = await getDoc(userDocRef);
-      
-      if (!userDoc.exists()) {
-        await setDoc(userDocRef, {
-          email,
-          points: 0,
-          currentStreak: 0,
-          username: '',
-          isPublicProfile: false
-        });
-        
-        const streakDocRef = doc(db, 'users', uid, 'streaks', 'current');
-        await setDoc(streakDocRef, {
-          currentStreak: 0,
-          lastCompletedDate: new Date()
-        });
-      }
-    } catch (error) {
-      console.error('Google login failed:', error);
-      throw error;
-    }
-  };
+
 
   const logout = async () => {
     try {
@@ -264,7 +229,6 @@ export const useAuth = () => {
     isLoggedIn,
     login,
     register,
-    loginWithGoogle,
     logout,
     updateUsername,
     updateProfileVisibility

@@ -2,27 +2,29 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAppContext } from '@/context/AppContext';
-import { motion } from 'framer-motion';
-import { CheckCircle, ChevronRight, Target, Calendar, Award } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CheckCircle, ChevronRight, Target, Calendar, Award, ArrowRight, Sparkles } from 'lucide-react';
 
 const OnboardingStep = ({ 
   title, 
   description, 
   icon, 
-  isActive 
+  isActive,
+  showArrow 
 }: { 
   title: string; 
   description: string; 
   icon: React.ReactNode;
   isActive: boolean;
+  showArrow?: boolean;
 }) => (
   <motion.div 
-    className={`p-4 sm:p-6 rounded-xl ${isActive ? 'bg-app-lightblue' : 'bg-app-darkblue/50'} mb-3 sm:mb-4`}
+    className={`relative p-4 sm:p-6 rounded-xl ${isActive ? 'bg-app-lightblue border-2 border-app-teal' : 'bg-app-darkblue/50'} mb-3 sm:mb-4`}
     initial={{ opacity: 0, y: 20 }}
     animate={{ 
       opacity: isActive ? 1 : 0.6, 
       y: 0,
-      scale: isActive ? 1 : 0.98
+      scale: isActive ? 1.02 : 0.98
     }}
     transition={{ 
       duration: 0.4,
@@ -33,7 +35,7 @@ const OnboardingStep = ({
   >
     <div className="flex items-start">
       <motion.div 
-        className="mr-3 sm:mr-4 text-app-teal"
+        className="mr-3 sm:mr-4 text-app-teal relative"
         initial={{ scale: 0.9 }}
         animate={{ 
           scale: isActive ? 1.1 : 1,
@@ -46,12 +48,45 @@ const OnboardingStep = ({
         }}
       >
         {icon}
+        {isActive && (
+          <motion.div
+            className="absolute -top-1 -right-1"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Sparkles size={12} className="text-yellow-400" />
+          </motion.div>
+        )}
       </motion.div>
-      <div>
+      <div className="flex-1">
         <h3 className="text-lg sm:text-xl font-bold text-white mb-1 sm:mb-2">{title}</h3>
         <p className="text-sm sm:text-base text-gray-400">{description}</p>
       </div>
+      {showArrow && isActive && (
+        <motion.div
+          className="ml-4 text-app-teal"
+          initial={{ x: -10, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ delay: 0.5, duration: 0.3 }}
+        >
+          <motion.div
+            animate={{ x: [0, 5, 0] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <ArrowRight size={20} />
+          </motion.div>
+        </motion.div>
+      )}
     </div>
+    {isActive && (
+      <motion.div
+        className="absolute inset-0 rounded-xl bg-gradient-to-r from-app-teal/10 to-transparent pointer-events-none"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      />
+    )}
   </motion.div>
 );
 
@@ -64,24 +99,28 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   
   const steps = [
     {
-      title: "Welcome to Habit Streak Now!",
-      description: "Track your daily habits, build streaks, and achieve your goals with our simple and effective app.",
-      icon: <Target size={24} />
+      title: "Welcome to Daily Micro-Task Planner!",
+      description: "Transform your life with small, consistent actions. Track habits, build streaks, and achieve your goals with our engaging and intuitive app.",
+      icon: <Target size={24} />,
+      showArrow: true
     },
     {
-      title: "Create Micro-Tasks",
-      description: "Break down your goals into small, manageable tasks that you can complete every day.",
-      icon: <CheckCircle size={24} />
+      title: "Create Smart Micro-Tasks",
+      description: "Break down big goals into bite-sized, achievable tasks. Set reminders and make progress every single day.",
+      icon: <CheckCircle size={24} />,
+      showArrow: true
     },
     {
-      title: "Build Streaks",
-      description: "Maintain your streak by completing tasks daily. The longer your streak, the more points you earn!",
-      icon: <Calendar size={24} />
+      title: "Build Powerful Streaks",
+      description: "Consistency is key! Maintain your streak by completing tasks daily. Watch your momentum grow and earn bonus points!",
+      icon: <Calendar size={24} />,
+      showArrow: true
     },
     {
-      title: "Earn Badges",
-      description: "Unlock achievements and badges as you progress. Show off your accomplishments!",
-      icon: <Award size={24} />
+      title: "Unlock Amazing Badges",
+      description: "Celebrate your achievements! Earn special badges, track your progress, and share your success with others.",
+      icon: <Award size={24} />,
+      showArrow: false
     }
   ];
   
@@ -125,15 +164,18 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
         </div>
         
         <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
-          {steps.map((s, i) => (
-            <OnboardingStep 
-              key={i} 
-              title={s.title} 
-              description={s.description} 
-              icon={s.icon}
-              isActive={i === step}
-            />
-          ))}
+          <AnimatePresence mode="wait">
+            {steps.map((s, i) => (
+              <OnboardingStep 
+                key={i} 
+                title={s.title} 
+                description={s.description} 
+                icon={s.icon}
+                isActive={i === step}
+                showArrow={s.showArrow}
+              />
+            ))}
+          </AnimatePresence>
         </div>
         
         <div className="flex justify-between items-center">

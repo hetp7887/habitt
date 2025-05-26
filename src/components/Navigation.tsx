@@ -19,10 +19,11 @@ const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
 
   return (
     <motion.div 
-      className="fixed bottom-0 left-0 right-0 h-16 bg-app-darkblue border-t border-gray-800 flex justify-around items-center px-1 sm:px-6 z-10 overflow-x-auto"
+      className="fixed bottom-0 left-0 right-0 h-16 bg-app-darkblue border-t border-gray-800 flex justify-around items-center px-1 sm:px-6 z-50 overflow-x-auto"
       initial={{ y: 100 }}
       animate={{ y: 0 }}
       transition={{ type: "spring", stiffness: 260, damping: 20 }}
+      style={{ position: 'fixed', bottom: 0, left: 0, right: 0 }}
     >
       {navItems.map(item => (
         <motion.button 
