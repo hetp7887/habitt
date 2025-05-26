@@ -1,14 +1,11 @@
 import React from 'react';
 import { useAppContext } from '@/context/AppContext';
-import { Button } from '@/components/ui/button';
-import { LogOut, Flame, CheckCircle, Award, BarChart2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Flame, CheckCircle, Award, BarChart2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import StatsCard from './StatsCard';
 
 const Dashboard = () => {
-  const { currentStreak, badges, completedTasksPercentage, user, logout } = useAppContext();
-  const { toast } = useToast();
+  const { currentStreak, badges, completedTasksPercentage, user } = useAppContext();
 
   // Mock weekly data - in a real app, this would come from Firestore
   const weeklyData = [
@@ -20,22 +17,6 @@ const Dashboard = () => {
     { day: 'S', height: 85 },
   ];
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      toast({
-        title: "Logged out",
-        description: "You have been successfully logged out",
-      });
-    } catch (error: any) {
-      console.error('Logout failed:', error);
-      toast({
-        title: "Logout failed",
-        description: error.message || "An error occurred during logout",
-      });
-    }
-  };
-
   return (
     <div className="p-4 sm:p-6 flex flex-col h-full">
       <motion.div 
@@ -45,14 +26,6 @@ const Dashboard = () => {
         transition={{ duration: 0.3 }}
       >
         <h2 className="text-xl sm:text-2xl font-bold text-white">Dashboard</h2>
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={handleLogout}
-          className="text-gray-400 hover:text-white"
-        >
-          <LogOut size={18} />
-        </Button>
       </motion.div>
 
       {user && (

@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import Dashboard from "@/components/Dashboard";
+import MainApp from "@/components/MainApp";
 import LoginPage from "@/components/LoginPage";
 import Onboarding from "@/components/Onboarding";
 import UsernamePrompt from "@/components/UsernamePrompt";
@@ -31,7 +31,7 @@ const Index = () => {
 
   return (
     <>
-      <Dashboard />
+      <MainApp />
       <TaskReminderNotification onMarkComplete={completeTask} />
     </>
   );
