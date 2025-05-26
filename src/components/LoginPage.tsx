@@ -49,8 +49,7 @@ const LoginPage = () => {
               <span className="h-2 w-8 bg-pink-400 rounded-full"></span>
             </div>
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2">Daily Micro-</h1>
-          <h1 className="text-4xl font-bold text-white">Task Planner</h1>
+          <h1 className="text-4xl font-bold text-white mb-2">DoTogether</h1>
         </div>
         
         <div className="flex w-full mb-6">

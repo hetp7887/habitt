@@ -1,15 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import {
-  collection,
-  doc,
-  setDoc,
-  getDoc,
-  getDocs,
-  updateDoc,
-  deleteDoc
-} from 'firebase/firestore';
-import { getFirebaseAuth, getFirebaseFirestore } from '../config/firebase';
+import { firestoreService } from '../services/firestoreService';
 import { Task, User } from '../types';
 
 export const useTasks = (user: User | null, isLoggedIn: boolean) => {
@@ -17,24 +8,16 @@ export const useTasks = (user: User | null, isLoggedIn: boolean) => {
   const [completedTasksPercentage, setCompletedTasksPercentage] = useState(0);
 
   useEffect(() => {
-    if (user && isLoggedIn) {
-      fetchUserTasks(user.id);
+    if (user && isLoggedIn && user.username) {
+      fetchUserTasks(user.username);
     } else {
       setTasks([]);
     }
   }, [user, isLoggedIn]);
 
-  const fetchUserTasks = async (uid: string) => {
+  const fetchUserTasks = async (username: string) => {
     try {
-      const db = getFirebaseFirestore();
-      const tasksCollectionRef = collection(db, 'users', uid, 'tasks');
-      const tasksSnapshot = await getDocs(tasksCollectionRef);
-      const tasksList: Task[] = [];
-      
-      tasksSnapshot.forEach((doc) => {
-        tasksList.push({ id: doc.id, ...doc.data() } as Task);
-      });
-      
+      const tasksList = await firestoreService.getUserTasks(username);
       setTasks(tasksList);
       
       if (tasksList.length > 0) {
@@ -51,21 +34,15 @@ export const useTasks = (user: User | null, isLoggedIn: boolean) => {
   };
 
   const addTask = async (task: Omit<Task, 'id'>) => {
-    const auth = getFirebaseAuth();
-    if (!auth.currentUser) return;
+    if (!user || !user.username) return;
     
     try {
-      const db = getFirebaseFirestore();
-      const uid = auth.currentUser.uid;
-      const tasksCollectionRef = collection(db, 'users', uid, 'tasks');
-      const newTaskRef = doc(tasksCollectionRef);
-      
+      const taskId = await firestoreService.addTask(user.username, task);
       const newTask = {
         ...task,
-        id: newTaskRef.id,
+        id: taskId,
       };
       
-      await setDoc(newTaskRef, newTask);
       setTasks(prev => [...prev, newTask as Task]);
     } catch (error) {
       console.error('Error adding task:', error);
@@ -73,15 +50,10 @@ export const useTasks = (user: User | null, isLoggedIn: boolean) => {
   };
 
   const completeTask = async (id: string, onUpdateUser: (points: number, streak: number) => void) => {
-    const auth = getFirebaseAuth();
-    if (!auth.currentUser) return;
+    if (!user || !user.username) return;
     
     try {
-      const db = getFirebaseFirestore();
-      const uid = auth.currentUser.uid;
-      const taskDocRef = doc(db, 'users', uid, 'tasks', id);
-      
-      await updateDoc(taskDocRef, { isCompleted: true });
+      await firestoreService.updateTask(user.username, id, { isCompleted: true });
       
       setTasks(prev => {
         const updatedTasks = prev.map(task => 
@@ -98,9 +70,8 @@ export const useTasks = (user: User | null, isLoggedIn: boolean) => {
       
       // Add points for completing task
       if (user) {
-        const userDocRef = doc(db, 'users', uid);
         const newPoints = (user.points || 0) + 10;
-        await updateDoc(userDocRef, { points: newPoints });
+        await firestoreService.updateUser(user.username, { points: newPoints });
         onUpdateUser(newPoints, user.currentStreak);
       }
     } catch (error) {
@@ -109,15 +80,10 @@ export const useTasks = (user: User | null, isLoggedIn: boolean) => {
   };
 
   const uncompleteTask = async (id: string) => {
-    const auth = getFirebaseAuth();
-    if (!auth.currentUser) return;
+    if (!user || !user.username) return;
     
     try {
-      const db = getFirebaseFirestore();
-      const uid = auth.currentUser.uid;
-      const taskDocRef = doc(db, 'users', uid, 'tasks', id);
-      
-      await updateDoc(taskDocRef, { isCompleted: false });
+      await firestoreService.updateTask(user.username, id, { isCompleted: false });
       
       setTasks(prev => {
         const updatedTasks = prev.map(task => 
@@ -136,15 +102,10 @@ export const useTasks = (user: User | null, isLoggedIn: boolean) => {
   };
 
   const deleteTask = async (id: string) => {
-    const auth = getFirebaseAuth();
-    if (!auth.currentUser) return;
+    if (!user || !user.username) return;
     
     try {
-      const db = getFirebaseFirestore();
-      const uid = auth.currentUser.uid;
-      const taskDocRef = doc(db, 'users', uid, 'tasks', id);
-      
-      await deleteDoc(taskDocRef);
+      await firestoreService.deleteTask(user.username, id);
       
       setTasks(prev => {
         const updatedTasks = prev.filter(task => task.id !== id);

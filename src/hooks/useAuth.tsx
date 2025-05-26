@@ -12,9 +12,13 @@ import {
   doc,
   setDoc,
   getDoc,
-  updateDoc
+  updateDoc,
+  query,
+  where,
+  getDocs
 } from 'firebase/firestore';
 import { getFirebaseAuth, getFirebaseFirestore } from '../config/firebase';
+import { firestoreService } from '../services/firestoreService';
 import { User } from '../types';
 
 export const useAuth = () => {
@@ -44,28 +48,34 @@ export const useAuth = () => {
           if (firebaseUser) {
             try {
               console.log("Fetching user data for:", firebaseUser.uid);
-              const userData = await fetchUserData(firebaseUser.uid);
+              const userData = await fetchUserDataByEmail(firebaseUser.email || '');
               console.log("User data fetched successfully:", userData ? "User exists" : "New user");
               
-              const userObj = {
-                id: firebaseUser.uid,
-                email: firebaseUser.email || '',
-                displayName: firebaseUser.displayName || '',
-                photoURL: firebaseUser.photoURL || '',
-                points: userData?.points || 0,
-                currentStreak: userData?.currentStreak || 0,
-                username: userData?.username || '',
-                isPublicProfile: userData?.isPublicProfile || false
-              };
-              
-              setUser(userObj);
-              setIsLoggedIn(true);
+              if (userData) {
+                setUser(userData);
+                setIsLoggedIn(true);
+              } else {
+                // User exists in Firebase Auth but not in our Firestore with username
+                // This might be a legacy user or new user without username
+                const userObj = {
+                  id: '', // Will be set when username is chosen
+                  email: firebaseUser.email || '',
+                  displayName: firebaseUser.displayName || '',
+                  photoURL: firebaseUser.photoURL || '',
+                  points: 0,
+                  currentStreak: 0,
+                  username: '',
+                  isPublicProfile: false
+                };
+                setUser(userObj);
+                setIsLoggedIn(true);
+              }
               
               console.log("All user data loaded successfully");
             } catch (error) {
               console.error('Error in auth state listener:', error);
               const userObj = {
-                id: firebaseUser.uid,
+                id: '',
                 email: firebaseUser.email || '',
                 displayName: firebaseUser.displayName || '',
                 photoURL: firebaseUser.photoURL || '',
@@ -98,43 +108,31 @@ export const useAuth = () => {
     };
   }, []);
 
-  const fetchUserData = async (uid: string): Promise<User> => {
+  const fetchUserDataByEmail = async (email: string): Promise<User | null> => {
     try {
       const db = getFirebaseFirestore();
-      const auth = getFirebaseAuth();
-      const userDocRef = doc(db, 'users', uid);
-      const userDoc = await getDoc(userDocRef);
+      const usersCollectionRef = collection(db, 'users');
+      const q = query(usersCollectionRef, where('email', '==', email));
+      const querySnapshot = await getDocs(q);
       
-      if (userDoc.exists()) {
+      if (!querySnapshot.empty) {
+        const userDoc = querySnapshot.docs[0];
         return {
-          id: uid,
+          id: userDoc.id, // This is the username
           email: userDoc.data().email,
-          username: userDoc.data().username || '',
+          username: userDoc.data().username || userDoc.id,
           points: userDoc.data().points || 0,
           currentStreak: userDoc.data().currentStreak || 0,
-          isPublicProfile: userDoc.data().isPublicProfile || false
+          isPublicProfile: userDoc.data().isPublicProfile || false,
+          displayName: userDoc.data().displayName || '',
+          photoURL: userDoc.data().photoURL || ''
         };
-      } else {
-        const newUser = {
-          id: uid,
-          email: auth.currentUser?.email || '',
-          points: 0,
-          currentStreak: 0,
-          isPublicProfile: false
-        };
-        await setDoc(userDocRef, newUser);
-        return newUser;
       }
+      
+      return null;
     } catch (error) {
-      console.error('Error fetching user data:', error);
-      const auth = getFirebaseAuth();
-      return {
-        id: uid,
-        email: auth.currentUser?.email || '',
-        points: 0,
-        currentStreak: 0,
-        isPublicProfile: false
-      };
+      console.error('Error fetching user data by email:', error);
+      return null;
     }
   };
 
@@ -152,24 +150,9 @@ export const useAuth = () => {
   const register = async (email: string, password: string) => {
     try {
       const auth = getFirebaseAuth();
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const uid = userCredential.user.uid;
-      
-      const db = getFirebaseFirestore();
-      const userDocRef = doc(db, 'users', uid);
-      await setDoc(userDocRef, {
-        email,
-        points: 0,
-        currentStreak: 0,
-        username: '',
-        isPublicProfile: false
-      });
-      
-      const streakDocRef = doc(db, 'users', uid, 'streaks', 'current');
-      await setDoc(streakDocRef, {
-        currentStreak: 0,
-        lastCompletedDate: new Date()
-      });
+      await createUserWithEmailAndPassword(auth, email, password);
+      console.log('User registered successfully. Username will be set later.');
+      // User document will be created when username is chosen
     } catch (error) {
       console.error('Registration failed:', error);
       throw error;
@@ -195,12 +178,33 @@ export const useAuth = () => {
     if (!auth.currentUser) throw new Error('User not authenticated');
     
     try {
-      const db = getFirebaseFirestore();
-      const uid = auth.currentUser.uid;
-      const userDocRef = doc(db, 'users', uid);
+      // Check if username is available
+      const isAvailable = await firestoreService.isUsernameAvailable(username);
+      if (!isAvailable) {
+        throw new Error('Username is already taken');
+      }
+
+      // Check if user already has a username-based document
+      const existingUser = await fetchUserDataByEmail(auth.currentUser.email || '');
       
-      await updateDoc(userDocRef, { username });
-      setUser(prev => prev ? { ...prev, username } : null);
+      if (existingUser && existingUser.username) {
+        // User already has a username, just update it
+        await firestoreService.updateUser(existingUser.username, { username });
+        setUser(prev => prev ? { ...prev, username, id: username } : null);
+      } else {
+        // Create new user document with username as ID
+        const userData = {
+          email: auth.currentUser.email || '',
+          displayName: auth.currentUser.displayName || '',
+          photoURL: auth.currentUser.photoURL || '',
+          points: user?.points || 0,
+          currentStreak: user?.currentStreak || 0,
+          isPublicProfile: user?.isPublicProfile || false
+        };
+
+        await firestoreService.createUser(username, userData);
+        setUser(prev => prev ? { ...prev, username, id: username } : null);
+      }
     } catch (error) {
       console.error('Error updating username:', error);
       throw error;
@@ -208,15 +212,10 @@ export const useAuth = () => {
   };
 
   const updateProfileVisibility = async (isPublic: boolean): Promise<void> => {
-    const auth = getFirebaseAuth();
-    if (!auth.currentUser) throw new Error('User not authenticated');
+    if (!user || !user.username) throw new Error('User not authenticated or username not set');
     
     try {
-      const db = getFirebaseFirestore();
-      const uid = auth.currentUser.uid;
-      const userDocRef = doc(db, 'users', uid);
-      
-      await updateDoc(userDocRef, { isPublicProfile: isPublic });
+      await firestoreService.updateUser(user.username, { isPublicProfile: isPublic });
       setUser(prev => prev ? { ...prev, isPublicProfile: isPublic } : null);
     } catch (error) {
       console.error('Error updating profile visibility:', error);

@@ -59,7 +59,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
   const { tasks, completedTasksPercentage, addTask: baseAddTask, completeTask: baseCompleteTask, uncompleteTask, deleteTask, reorderTasks } = useTasks(user, isLoggedIn);
   const { currentStreak, checkAndUpdateStreak, setCurrentStreak } = useStreak(user, isLoggedIn);
   const { badges, updateBadges, evaluateAndAwardSpecialBadge } = useBadges();
-  const { fetchPublicProfiles } = useProfiles(user?.id);
+  const { fetchPublicProfiles } = useProfiles(user?.username);
 
   // Initialize notification service
   const notificationService = NotificationService.getInstance();

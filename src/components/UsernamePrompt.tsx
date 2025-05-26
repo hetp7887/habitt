@@ -26,19 +26,35 @@ const UsernamePrompt: React.FC<UsernamePromptProps> = ({ onComplete }) => {
       return;
     }
 
+    if (username.length < 3) {
+      toast({
+        title: "Username too short",
+        description: "Username must be at least 3 characters long",
+      });
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+      toast({
+        title: "Invalid username",
+        description: "Username can only contain letters, numbers, and underscores",
+      });
+      return;
+    }
+
     try {
       setIsSubmitting(true);
-      await updateUsername(username);
+      await updateUsername(username.trim());
       toast({
-        title: "Username updated",
-        description: "Your profile has been updated successfully"
+        title: "Username set successfully",
+        description: "Welcome to DoTogether!"
       });
       onComplete();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating username:", error);
       toast({
         title: "Error",
-        description: "Failed to update username. Please try again.",
+        description: error.message || "Failed to set username. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -58,8 +74,8 @@ const UsernamePrompt: React.FC<UsernamePromptProps> = ({ onComplete }) => {
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", damping: 20 }}
       >
-        <h2 className="text-xl font-bold text-white mb-4">Welcome to Daily Micro-Task Planner!</h2>
-        <p className="text-gray-300 mb-6">Choose a username for your profile</p>
+        <h2 className="text-xl font-bold text-white mb-4">Welcome to DoTogether!</h2>
+        <p className="text-gray-300 mb-6">Choose a unique username to get started</p>
         
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
@@ -70,6 +86,9 @@ const UsernamePrompt: React.FC<UsernamePromptProps> = ({ onComplete }) => {
               className="bg-app-lightblue border-gray-700 text-white"
               disabled={isSubmitting}
             />
+            <p className="text-sm text-gray-400 mt-1">
+              3+ characters (letters, numbers, underscores only)
+            </p>
           </div>
           
           <div className="flex gap-3">

@@ -1,8 +1,8 @@
 
 {
-  "name": "Daily Micro-Task Planner",
-  "short_name": "TaskPlanner",
-  "description": "Build habits with small daily tasks",
+  "name": "DoTogether",
+  "short_name": "DoTogether",
+  "description": "Build habits and achieve goals together",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#1a1f37",

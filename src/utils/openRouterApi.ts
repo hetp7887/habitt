@@ -14,7 +14,7 @@ export const suggestTask = async (): Promise<string> => {
       headers: {
         "Authorization": "Bearer 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",
         "HTTP-Referer": "daily-micro-task-planner", 
-        "X-Title": "Daily Micro-Task Planner", 
+        "X-Title": "DoTogether", 
         "Content-Type": "application/json"
       },
       body: JSON.stringify({

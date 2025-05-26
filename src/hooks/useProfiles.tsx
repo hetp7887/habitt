@@ -1,50 +1,24 @@
 
 import { useState } from 'react';
-import {
-  collection,
-  query,
-  where,
-  getDocs
-} from 'firebase/firestore';
-import { getFirebaseFirestore } from '../config/firebase';
+import { firestoreService } from '../services/firestoreService';
 import { UserProfile, Badge } from '../types';
 
-export const useProfiles = (currentUserId?: string) => {
+export const useProfiles = (currentUsername?: string) => {
   const fetchPublicProfiles = async (): Promise<UserProfile[]> => {
     try {
-      const db = getFirebaseFirestore();
-      const usersQuery = query(
-        collection(db, 'users'),
-        where('isPublicProfile', '==', true)
-      );
+      const profiles = await firestoreService.getPublicProfiles();
       
-      const usersSnapshot = await getDocs(usersQuery);
-      const profiles: UserProfile[] = [];
-      
-      for (const userDoc of usersSnapshot.docs) {
-        if (userDoc.id === currentUserId) continue;
-        
-        const userData = userDoc.data();
-        
-        if (!userData.username) continue;
-        
-        const badgesSnapshot = await getDocs(collection(db, 'users', userDoc.id, 'badges'));
-        const userBadges: Badge[] = badgesSnapshot.docs.map(doc => ({ 
-          id: doc.id,
-          ...doc.data()
-        } as Badge));
-        
-        profiles.push({
-          id: userDoc.id,
-          username: userData.username,
-          points: userData.points || 0,
-          currentStreak: userData.currentStreak || 0,
-          badges: userBadges,
+      // Filter out current user and format the data
+      return profiles
+        .filter(profile => profile.id !== currentUsername)
+        .map(profile => ({
+          id: profile.id,
+          username: profile.username || profile.id,
+          points: profile.points || 0,
+          currentStreak: profile.currentStreak || 0,
+          badges: [], // TODO: Implement badges if needed
           isPublicProfile: true
-        });
-      }
-      
-      return profiles;
+        }));
     } catch (error) {
       console.error('Error fetching public profiles:', error);
       return [];

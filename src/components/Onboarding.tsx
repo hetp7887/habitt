@@ -99,8 +99,8 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   
   const steps = [
     {
-      title: "Welcome to Daily Micro-Task Planner!",
-      description: "Transform your life with small, consistent actions. Track habits, build streaks, and achieve your goals with our engaging and intuitive app.",
+      title: "Welcome to DoTogether!",
+      description: "Transform your life with small, consistent actions. Track habits, build streaks, and achieve your goals together with our engaging and intuitive app.",
       icon: <Target size={24} />,
       showArrow: true
     },

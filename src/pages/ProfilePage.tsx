@@ -40,7 +40,7 @@ const ProfilePage = () => {
 
   const handleShareStreak = () => {
     // Create the text to share
-    const shareText = `🔥 I'm on a ${currentStreak}-day streak with my Daily Micro-Task Planner! Join me and build better habits!`;
+    const shareText = `🔥 I'm on a ${currentStreak}-day streak with DoTogether! Join me and build better habits!`;
     
     // Check if Web Share API is supported
     if (navigator.share) {
